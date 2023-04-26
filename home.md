@@ -17,5 +17,5 @@ next_string: Feature
 CHMPX PHP Extension is an official opensource PHP driver for [CHMPX](https://chmpx.antpick.ax/) by Yahoo Japan Corporation.
 
 ## The purpose
-Antpickax tries to provide [CHMPX](https://chmpx.antpick.ax/) functions in every user application environments and you can build your own distributed and regilient application by [PHP](https://www.php.net/) now.
+Antpickax tries to provide [CHMPX](https://chmpx.antpick.ax/) functions in every user application environments and you can build your own distributed and resilient application by [PHP](https://www.php.net/) now.
 

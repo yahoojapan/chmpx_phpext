@@ -14,7 +14,7 @@ next_string: Usage
 ---
 
 # Feature
-CHMPX PHP Extension provides [CHMPX](https://chmpx.antpick.ax/) API for [PHP](https://www.php.net/). You can build your own distributed and regilient [PHP](https://www.php.net/) application on your [CHMPX](https://chmpx.antpick.ax/) cluster.
+CHMPX PHP Extension provides [CHMPX](https://chmpx.antpick.ax/) API for [PHP](https://www.php.net/). You can build your own distributed and resilient [PHP](https://www.php.net/) application on your [CHMPX](https://chmpx.antpick.ax/) cluster.
 
 
 ## Functions
