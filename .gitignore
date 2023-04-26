@@ -1,0 +1,117 @@
+#
+# CHMPX PHP Extension library
+#
+# Copyright 2023 Yahoo Japan Corporation.
+#
+# CHMPX is inprocess data exchange by MQ with consistent hashing.
+# CHMPX is made for the purpose of the construction of
+# original messaging system and the offer of the client
+# library.
+# CHMPX transfers messages between the client and the server/
+# slave. CHMPX based servers are dispersed by consistent
+# hashing and are automatically layouted. As a result, it
+# provides a high performance, a high scalability.
+#
+# For the full copyright and license information, please view
+# the LICENSE file that was distributed with this source code.
+#
+# AUTHOR:   Hirotaka Wakabayashi
+# CREATE:   Fri, Mar 31 2023
+# REVISION:
+#
+
+#
+# Wildcards
+#
+*.dep
+*.o
+*.lo
+*.a
+*.la
+*.so
+*.gcno
+*.gcda
+*.rpm
+*.deb
+.*~
+
+#
+# Autotools Files
+#
+acinclude.m4
+aclocal.m4
+autom4te.cache
+config.guess
+config.h
+config.h.in
+config.h.in~
+config.log
+config.nice
+config.status
+config.sub
+configure
+configure.in
+configure.ac
+install-sh
+ltmain.sh
+Makefile
+Makefile.fragments
+Makefile.global
+Makefile.objects
+missing
+build
+include
+libtool
+
+#
+# Created by configure
+#
+buildutils/chmpxpx.ini
+buildutils/php-pecl-chmpx.spec
+buildutils/control
+buildutils/control.in
+buildutils/copyright
+buildutils/rules
+buildutils/watch
+buildutils/upstream/metadata
+
+#
+# Directries
+#
+.libs
+.deps
+mkinstalldirs
+modules
+packages
+packages/*
+
+#
+# Files and Directories for packaging
+#
+run-tests.php
+php-pecl-chmpx.spec
+rpmbuild/
+rpmbuild/*
+debian_build/
+debian_build/*
+buildutils/APKBUILD.templ
+
+#
+# Test files
+#
+tmp-php.ini
+tests/*.diff
+tests/*.out
+tests/*.php
+tests/*.exp
+tests/*.log
+tests/*.sh
+
+#
+# Local variables:
+# tab-width: 4
+# c-basic-offset: 4
+# End:
+# vim600: noexpandtab sw=4 ts=4 fdm=marker
+# vim<600: noexpandtab sw=4 ts=4
+#

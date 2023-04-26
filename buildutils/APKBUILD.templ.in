@@ -1,0 +1,121 @@
+#
+# CHMPX PHP Extension library
+#
+# Copyright 2022 Yahoo Japan corporation.
+#
+# CHMPX is inprocess data exchange by MQ with consistent hashing.
+# CHMPX is made for the purpose of the construction of
+# original messaging system and the offer of the client
+# library.
+# CHMPX transfers messages between the client and the server/
+# slave. CHMPX based servers are dispersed by consistent
+# hashing and are automatically layouted. As a result, it
+# provides a high performance, a high scalability.
+#
+# For the full copyright and license information, please view
+# the LICENSE file that was distributed with this source code.
+#
+# AUTHOR:   Hirotaka Wakabayashi
+# CREATE:   Tue, Feb 22 2022
+# REVISION:
+#
+
+#---------------------------------------------------------------
+# Local varibales as antpickax template
+#---------------------------------------------------------------
+#
+# Set variables by configure
+#
+_git_domain="@GIT_DOMAIN@"
+_organization_name="@GIT_ORG@"
+_repository_name="@GIT_REPO@"
+
+#
+# Set variables by php_alpine_build.sh
+#
+_package_name=%%PACKAGE_PHPVER_NAME%%
+_package_version=%%PACKAGE_VERSION%%
+_package_revision=%%BUILD_NUMBER%%
+_package_phpver=%%PACKAGE_PHPVERSION%%
+_package_desc="%%PACKAGE_DESC%%"
+_source_archive_url=%%SOURCE_ARCHIVE_URL%%
+
+#---------------------------------------------------------------
+# Main variables for APKBUILD
+#---------------------------------------------------------------
+# Contributor: @DEV_NAME@ <@DEV_EMAIL@>
+# Maintainer: @DEV_NAME@ <@DEV_EMAIL@>
+
+# [NOTE]
+# The $_organization_name is "chmpx_phpext", but the $pkgname
+# should be "phpXX-pecl-chmpx", so adjust with this variable.
+#
+pkgname=$_package_name
+pkgver=$_package_version
+pkgrel=$_package_revision
+pkgdesc=$_package_desc
+
+url="https://php.chmpx.antpick.ax/"
+arch="x86_64"
+license="MIT"
+
+depends="
+	php$_package_phpver
+	chmpx
+"
+depends_dev=""
+makedepends="
+	$depends_dev
+	musl-locales
+	procps
+	php$_package_phpver-dev
+	chmpx-dev
+"
+
+install=""
+subpackages=""
+
+source="$pkgname-$pkgver.tar.gz%%SOURCE_ARCHIVE_URL%%"
+
+builddir="$srcdir/$pkgname-$pkgver"
+
+#---------------------------------------------------------------
+# Build functions for APKBUILD
+#---------------------------------------------------------------
+prepare() {
+	default_prepare
+	# this function can be omitted if no extra steps are needed
+}
+
+unpack() {
+	default_unpack
+
+	# [NOTE]
+	# A github release archive is unzipped as a directory with the
+	# repository name(k2hash_phpext) and version number.
+	# In this case, change the directory name to the package name
+	# (phpXX-pecl-k2hash) instead of the repository name.
+	#
+	if [ -d "$_repository_name-$pkgver" ]; then
+		mv "$_repository_name-$pkgver" "$pkgname-$pkgver"
+	fi
+}
+
+build() {
+	phpize
+	./configure --prefix=/usr
+	make
+}
+
+check() {
+	TEST_PHP_ARGS='-q' make test
+}
+
+package() {
+	install -Dm 0644 buildutils/chmpxpx.ini "$pkgdir"/etc/php"$_package_phpver"/conf.d/chmpxpx.ini
+	install -Dm 0755 modules/chmpxpx.so     "$pkgdir"/usr/lib/php"$_package_phpver"/modules/chmpxpx.so
+}
+
+# [NOTE]
+# Subsequent lines print the checksum of the source archive.
+#

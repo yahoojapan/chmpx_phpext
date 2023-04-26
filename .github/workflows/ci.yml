@@ -1,0 +1,149 @@
+#
+# CHMPX PHP Extension library
+#
+# Copyright 2022 Yahoo Japan corporation.
+#
+# CHMPX is inprocess data exchange by MQ with consistent hashing.
+# CHMPX is made for the purpose of the construction of
+# original messaging system and the offer of the client
+# library.
+# CHMPX transfers messages between the client and the server/
+# slave. CHMPX based servers are dispersed by consistent
+# hashing and are automatically layouted. As a result, it
+# provides a high performance, a high scalability.
+#
+# For the full copyright and license information, please view
+# the LICENSE file that was distributed with this source code.
+#
+# AUTHOR:   Hirotaka Wakabayashi
+# CREATE:   Tue, Feb 22 2022
+# REVISION:
+#
+
+#----------------------------------------------------------
+# Github Actions
+#----------------------------------------------------------
+name: PHP AntPickax CI
+
+#
+# Events
+#
+on:
+  push:
+  pull_request:
+  #
+  # CRON event is fire on every sunday(UTC).
+  #
+  schedule:
+    - cron: '0 15 * * 0'
+
+#
+# Jobs
+#
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    #
+    # build matrix for containers
+    #
+    strategy:
+      #
+      # do not stop jobs automatically if any of the jobs fail
+      #
+      fail-fast: false
+
+      #
+      # matrix for containers
+      #
+      matrix:
+        container:
+          - ubuntu:22.04
+          - ubuntu:20.04
+          - ubuntu:18.04
+          - debian:bullseye
+          - debian:buster
+          - centos:centos7
+          - rockylinux:9
+          - rockylinux:8
+          - fedora:37
+          - fedora:36
+          - alpine:3.17
+
+        php:
+          - PHP80
+          - PHP81
+          - PHP82
+
+    container:
+      image: ${{ matrix.container }}
+
+    env:
+      #
+      # Installation special environment variables for ubuntu(debian).
+      #
+      DEBIAN_FRONTEND:  noninteractive
+
+      #
+      # For PHP Unit test
+      #
+      NO_INTERACTION: 1
+
+    steps:
+      #
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your
+      # job can access it
+      #
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      #
+      # Set environments from secrets
+      #
+      # [NOTE] Secrets
+      # Use Secrets of organization or repository as parameters to
+      # pass to build_helper.sh for building and packaging, .
+      #
+      # The available Secret variables are listed below:
+      #    PHPEXTTYPE_VARS_FILE       : specify custom variables file
+      #    BUILD_NUMBER               : buld number for packaging
+      #    DEVELOPER_FULLNAME         : developer name for package
+      #    DEVELOPER_EMAIL            : developer e-mail for package
+      #    FORCE_PUBLISH              : true means force to publish packages, false means never publish
+      #    USE_PACKAGECLOUD_REPO      : true means using pacakgecloud.io repo, false is not using
+      #  * PACKAGECLOUD_TOKEN         : The token for publishing to packagcloud.io
+      #    PACKAGECLOUD_OWNER         : owner name as a part of path to packagcloud.io for publishing/downloading
+      #    PACKAGECLOUD_PUBLISH_REPO  : repo name as a part of path to packagcloud.io for publishing
+      #    PACKAGECLOUD_DOWNLOAD_REPO : repo name as a part of path to packagcloud.io for downloading
+      #
+      # "PACKAGECLOUD_TOKEN" is a required variable to publish the
+      # package.
+      #
+      - name: Set environments from secrets
+        run: |
+          echo "ENV_PHPEXTTYPE_VARS_FILE=${{ secrets.PHPEXTTYPE_VARS_FILE }}"             >> "${GITHUB_ENV}"
+          echo "ENV_BUILD_NUMBER=${{ secrets.BUILD_NUMBER }}"                             >> "${GITHUB_ENV}"
+          echo "ENV_DEVELOPER_FULLNAME=${{ secrets.DEVELOPER_FULLNAME }}"                 >> "${GITHUB_ENV}"
+          echo "ENV_DEVELOPER_EMAIL=${{ secrets.DEVELOPER_EMAIL }}"                       >> "${GITHUB_ENV}"
+          echo "ENV_FORCE_PUBLISH=${{ secrets.FORCE_PUBLISH }}"                           >> "${GITHUB_ENV}"
+          echo "ENV_USE_PACKAGECLOUD_REPO=${{ secrets.USE_PACKAGECLOUD_REPO }}"           >> "${GITHUB_ENV}"
+          echo "ENV_PACKAGECLOUD_TOKEN=${{ secrets.PACKAGECLOUD_TOKEN }}"                 >> "${GITHUB_ENV}"
+          echo "ENV_PACKAGECLOUD_OWNER=${{ secrets.PACKAGECLOUD_OWNER }}"                 >> "${GITHUB_ENV}"
+          echo "ENV_PACKAGECLOUD_PUBLISH_REPO=${{ secrets.PACKAGECLOUD_PUBLISH_REPO }}"   >> "${GITHUB_ENV}"
+          echo "ENV_PACKAGECLOUD_DOWNLOAD_REPO=${{ secrets.PACKAGECLOUD_DOWNLOAD_REPO }}" >> "${GITHUB_ENV}"
+
+      #
+      # Run building and packaging helper
+      #
+      - name: Run building and packaging
+        run: |
+          /bin/sh -c "$GITHUB_WORKSPACE/.github/workflows/phpext_helper.sh -os ${{ matrix.container }} -php ${{ matrix.php }}"
+
+#
+# Local variables:
+# tab-width: 4
+# c-basic-offset: 4
+# End:
+# vim600: expandtab sw=4 ts=4 fdm=marker
+# vim<600: expandtab sw=4 ts=4
+#

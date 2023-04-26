@@ -1,0 +1,62 @@
+#!/usr/bin/make -f
+#
+# CHMPX PHP Extension library
+#
+# Copyright 2022 Yahoo Japan corporation.
+#
+# CHMPX is inprocess data exchange by MQ with consistent hashing.
+# CHMPX is made for the purpose of the construction of
+# original messaging system and the offer of the client
+# library.
+# CHMPX transfers messages between the client and the server/
+# slave. CHMPX based servers are dispersed by consistent
+# hashing and are automatically layouted. As a result, it
+# provides a high performance, a high scalability.
+#
+# For the full copyright and license information, please view
+# the LICENSE file that was distributed with this source code.
+#
+# AUTHOR:   Hirotaka Wakabayashi
+# CREATE:   Tue, Feb 22 2022
+# REVISION:
+#
+
+export REPORT_EXIT_STATUS:=0
+PECL_NAME_OVERRIDE := @PHP_PECL_BASE_NAME@
+PECL_CONFIGURE_MAINT_APPEND := --enable-@PHP_SO_NAME@
+DH_PHP_VERSIONS_OVERRIDE := @CHMPXPX_PHP_VERSION@
+include /usr/share/dh-php/pkg-pecl.mk
+
+DIR_TARGETS = $(addprefix build-,$(DH_PHP_VERSIONS))
+
+$(warning CONFIGURE_TARGETS: $(CONFIGURE_TARGETS))
+$(warning BUILD_TARGETS: $(BUILD_TARGETS))
+$(warning INSTALL_TARGETS: $(INSTALL_TARGETS))
+
+PECL_SOURCE=$(filter-out debian $(DIR_TARGETS),$(wildcard *))
+$(foreach ver,$(DH_PHP_VERSIONS),$(eval PECL_SOURCE_$(ver) := $(PECL_SOURCE)))
+$(foreach ver,$(DH_PHP_VERSIONS),$(mkdir build-$(ver)))
+
+override_dh_testdir: $(DIR_TARGETS)
+	dh_testdir
+
+build-%:
+	mkdir -p build-$(*)
+
+# [NOTE]
+# The "control" file will be created without the following call,
+# but it will output "php-pecl-<productname>" instead of "php<8.1>-pecl-<productname>"
+# and the build will fail.
+# To avoid this, make the following call.
+#
+debian/control: debian/control.in
+	/usr/share/dh-php/gen-control
+
+#
+# Local variables:
+# tab-width: 4
+# c-basic-offset: 4
+# End:
+# vim600: noexpandtab sw=4 ts=4 fdm=marker
+# vim<600: noexpandtab sw=4 ts=4
+#

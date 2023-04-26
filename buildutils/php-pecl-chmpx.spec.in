@@ -1,0 +1,211 @@
+#
+# CHMPX PHP Extension library
+#
+# Copyright 2022 Yahoo Japan corporation.
+#
+# CHMPX is inprocess data exchange by MQ with consistent hashing.
+# CHMPX is made for the purpose of the construction of
+# original messaging system and the offer of the client
+# library.
+# CHMPX transfers messages between the client and the server/
+# slave. CHMPX based servers are dispersed by consistent
+# hashing and are automatically layouted. As a result, it
+# provides a high performance, a high scalability.
+#
+# For the full copyright and license information, please view
+# the LICENSE file that was distributed with this source code.
+#
+# AUTHOR:   Hirotaka Wakabayashi
+# CREATE:   Tue, Feb 22 2022
+# REVISION:
+#
+
+#
+# we don't want -z defs linker flag
+#
+%undefine _strict_symbol_defs_build
+
+#
+# Local macros/define
+#
+%if %{undefined package_revision}
+%global package_revision 1
+%endif
+
+%if 0%{?scl:1}
+%global phproot     /opt/remi/%scl_php/root
+%global scl_vendor  remi
+%else
+%global phproot     /
+%endif
+
+%if 0%{?scl:1}
+%global sub_prefix  %{scl_prefix}
+%scl_package        @CHMPXPX_EXT_PKGNAME@
+%endif
+
+%global with_zts    0
+%global with_tests  1
+%global pecl_name   @PHP_SO_NAME@
+%global ini_name    40-%{pecl_name}.ini
+%global base_ini    buildutils/%{pecl_name}.ini
+
+%global buildver %(pkg-config --silence-errors --modversion libchmpx 2>/dev/null || echo 65536)
+
+Summary:            A chmpx PHP module written in C
+Name:               %{?sub_prefix}@CHMPXPX_EXT_PKGNAME@
+Version:            @CHMPXPX_EXT_VERSION@
+Release:            %{package_revision}%{?dist}
+License:            MIT
+Group:              Development/Languages
+URL:                https://@GIT_DOMAIN@/@GIT_ORG@/@GIT_REPO@/
+Source0:            https://@GIT_DOMAIN@/@GIT_ORG@/@GIT_REPO@/archive/@CHMPXPX_EXT_PKGNAME@-%{version}.tar.gz
+
+BuildRequires:      %{?dtsprefix}gcc
+BuildRequires:      %{?scl_prefix}php-devel                     >= 7.4
+BuildRequires:      chmpx-devel                                 >= %{buildver}
+Requires:           chmpx%{?_isa}                               >= %{buildver}
+
+%if 0%{?php_zend_api}
+Requires:           %{?scl_prefix}php(zend-abi)                  = %{php_zend_api}
+Requires:           %{?scl_prefix}php(api)                       = %{php_core_api}
+%endif
+%{?_sclreq:Requires: %{?scl_prefix}runtime%{?_sclreq}%{?_isa}}
+
+Provides:           %{?scl_prefix}php-%{pecl_name}               = %{version}
+Provides:           %{?scl_prefix}php-%{pecl_name}%{?_isa}       = %{version}
+Provides:           %{?scl_prefix}php-pecl(%{pecl_name})         = %{version}
+Provides:           %{?scl_prefix}php-pecl(%{pecl_name})%{?_isa} = %{version}
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
+Provides:           %{?scl_prefix}php-pecl-%{pecl_name}          = %{version}-%{release}
+Provides:           %{?scl_prefix}php-pecl-%{pecl_name}%{?_isa}  = %{version}-%{release}
+%endif
+
+Provides:           rh-php-%{pecl_name}                          = 1.1.0
+Provides:           rh-php-%{pecl_name}%{?_isa}                  = 1.1.0
+Provides:           rh-php-pecl(%{pecl_name})                    = 1.1.0
+Provides:           rh-php-pecl(%{pecl_name})%{?_isa}            = 1.1.0
+%if "%{?scl_prefix}" != "%{?sub_prefix}"
+Provides:           rh-php-pecl-%{pecl_name}                     = 1.1.0-1
+Provides:           rh-php-pecl-%{pecl_name}%{?_isa}             = 1.1.0-1
+%endif
+
+#
+# Description
+#
+%description
+CHMPX PHP Extension library
+
+@CHMPXPX_EXT_PKGNAME@ implements a CHMPX library as a PHP Extension
+written in C.
+
+CHMPX is a library and tools by Yahoo! JAPAN.  
+This PHP Extension library is for using CHMPX from PHP.
+
+By CHMPX PHP Extension library, you can easily incorporate
+the functions and features of CHMPX into PHP based programs.
+For the features of CHMPX, see https://chmpx.antpick.ax/
+
+Package built for PHP @CHMPXPX_PHP_VERSION@%{?scl: as Software Collection (%{scl} by %{?scl_vendor}%{!?scl_vendor:rh})}.
+
+#
+# Prep
+#    autosetup options
+#        -c Create Directory (and change to it) Before Unpacking
+#        -n Set Name of Build Directory
+#
+%prep
+%autosetup -c -n @CHMPXPX_EXT_PKGNAME@-%{version}
+
+mv @CHMPXPX_EXT_PKGNAME@-%{version} NTS
+
+%if %{with_zts}
+cp -pr NTS ZTS
+%endif
+
+#
+# Build
+#
+%build
+
+cd NTS
+%{phproot}/usr/bin/phpize
+
+%if %{with_zts}
+cd ../ZTS
+%{phproot}/usr/bin/zts-phpize
+%endif
+
+./configure
+make %{?_smp_mflags}
+
+#
+# Install
+#
+%install
+
+make -C NTS install INSTALL_ROOT=%{buildroot}
+
+# Drop in the bit of configuration
+install -Dpm 644 NTS/%{base_ini} %{buildroot}%{php_inidir}/%{ini_name}
+
+%if %{with_zts}
+make -C ZTS install INSTALL_ROOT=%{buildroot}
+install -Dpm 644 ZTS/%{base_ini} %{buildroot}%{php_ztsinidir}/%{ini_name}
+%endif
+
+#
+# Check
+#
+%check
+: Minimal load test for NTS extension
+%{__php} --no-php-ini \
+    --define extension=NTS/modules/%{pecl_name}.so \
+    -m | grep %{pecl_name}
+
+%if %{with_zts}
+: Minimal load test for ZTS extension
+%{__ztsphp} --no-php-ini \
+    --define extension=ZTS/modules/%{pecl_name}.so \
+    -m | grep %{pecl_name}
+%endif
+
+%if %{with_tests}
+ret=0
+pushd NTS
+: Run the upstream test Suite for NTS extension
+TEST_PHP_EXECUTABLE=%{__php} \
+TEST_PHP_ARGS="-n -d extension=$PWD/modules/%{pecl_name}.so" \
+NO_INTERACTION=1 \
+REPORT_EXIT_STATUS=1 \
+%{__php} -n run-tests.php --show-diff || ret=1
+popd
+
+%if %{with_zts}
+pushd ZTS
+: Run the upstream test Suite for ZTS extension
+TEST_PHP_EXECUTABLE=%{__ztsphp} \
+TEST_PHP_ARGS="-n -d extension=$PWD/modules/%{pecl_name}.so" \
+NO_INTERACTION=1 \
+REPORT_EXIT_STATUS=1 \
+%{__ztsphp} -n run-tests.php --show-diff || ret=1
+popd
+%endif
+exit $ret
+%endif
+
+#
+# Files
+#
+%files
+%{?_licensedir:%license NTS/LICENSE}
+%config(noreplace) %{php_inidir}/%{ini_name}
+%{php_extdir}/%{pecl_name}.so
+
+%if %{with_zts}
+%config(noreplace) %{php_ztsinidir}/%{ini_name}
+%{php_ztsextdir}/%{pecl_name}.so
+%endif
+
+%changelog
+@CHMPXPX_RPMCHANGELOG@
