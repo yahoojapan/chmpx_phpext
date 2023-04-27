@@ -1,0 +1,33 @@
+#
+# AntPickax
+#
+# Copyright 2018 Yahoo Japan Corporation.
+#
+# AntPickax is a product of basic libraries, components, and
+# systems that Yahoo! JAPAN provides as open source.
+#
+# This product examines libraries, components, and systems
+# necessary for providing Internet services, and provides them
+# as open source.
+# We provide original software implementing functions that
+# should be highly required libraries, components, systems etc
+# for the internet services.
+#
+# AUTHOR:   Takeshi Nakatani
+# CREATE:   Thu Feb 1 2018
+# REVISION: 1
+#
+
+#
+# Jekyll on github creates following directory.
+#
+_site
+
+#
+# Local variables:
+# tab-width: 4
+# c-basic-offset: 4
+# End:
+# vim600: noexpandtab sw=4 ts=4 fdm=marker
+# vim<600: noexpandtab sw=4 ts=4
+#
