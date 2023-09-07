@@ -74,6 +74,7 @@ buildutils/copyright
 buildutils/rules
 buildutils/watch
 buildutils/upstream/metadata
+buildutils/APKBUILD.templ
 
 #
 # Directries
