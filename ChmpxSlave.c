@@ -24,7 +24,9 @@
 #include "config.h"
 #endif
 
+// cppcheck-suppress missingInclude
 #include "php.h"
+// cppcheck-suppress missingInclude
 #include "ext/standard/info.h"
 #include "php_chmpxpx.h"
 

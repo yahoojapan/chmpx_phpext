@@ -20,6 +20,7 @@
 * REVISION:
 */
 
+// cppcheck-suppress missingInclude
 #include "chmpx.h"
 #include "config.h"
 
