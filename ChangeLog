@@ -1,3 +1,9 @@
+php-pecl-chmpx (1.0.10) unstable; urgency=low
+
+  * Changed support OS (fedora) and updated tool - #5
+
+ -- Takeshi Nakatani <ggtakec@gmail.com>  Thu, 02 Nov 2023 09:32:33 +0900
+
 php-pecl-chmpx (1.0.9) unstable; urgency=low
 
   * Bumpup version
