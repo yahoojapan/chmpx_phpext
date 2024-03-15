@@ -1,3 +1,9 @@
+php-pecl-chmpx (1.0.12) unstable; urgency=low
+
+  * Updated github actions tools and Changed support OS/PHP - #9
+
+ -- Takeshi Nakatani <ggtakec@gmail.com>  Fri, 15 Mar 2024 17:22:17 +0900
+
 php-pecl-chmpx (1.0.11) unstable; urgency=low
 
   * Fixed phpext_helper.sh for ruby and shellcheck and PHP repos - #7
