@@ -62,7 +62,7 @@ URL:                https://@GIT_DOMAIN@/@GIT_ORG@/@GIT_REPO@/
 Source0:            https://@GIT_DOMAIN@/@GIT_ORG@/@GIT_REPO@/archive/@CHMPXPX_EXT_PKGNAME@-%{version}.tar.gz
 
 BuildRequires:      %{?dtsprefix}gcc
-BuildRequires:      %{?scl_prefix}php-devel                     >= 7.4
+BuildRequires:      %{?scl_prefix}php-devel                     >= 8.1
 BuildRequires:      chmpx-devel                                 >= %{buildver}
 Requires:           chmpx%{?_isa}                               >= %{buildver}
 

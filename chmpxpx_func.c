@@ -29,7 +29,7 @@
 // cppcheck-suppress missingInclude
 #include "ext/standard/info.h"
 #include "php_chmpxpx.h"
-#include "chmpxpx_compat.h"
+#include "chmpxpx_arginfo.h"
 
 // class entries
 zend_class_entry* chmpx_class_entry;
