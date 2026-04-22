@@ -93,44 +93,35 @@ unpack() {
 
 	# [NOTE]
 	# A github release archive is unzipped as a directory with the
-	# repository name(k2hash_phpext) and version number.
+	# repository name(chmpx_phpext) and version number.
 	# In this case, change the directory name to the package name
-	# (phpXX-pecl-k2hash) instead of the repository name.
+	# (phpXX-pecl-chmpx) instead of the repository name.
 	#
-	if [ -d "$_repository_name-$pkgver" ]; then
-		mv "$_repository_name-$pkgver" "$pkgname-$pkgver"
+	if [ -d "$srcdir/$_repository_name-$pkgver" ]; then
+		mv "$srcdir/$_repository_name-$pkgver" "$srcdir/$pkgname-$pkgver"
 	fi
 }
 
 build() {
 	# [NOTE]
-	# In alpine3.21/3.22, phpize does not exist, and instead phpize84
-	# exists.
+	# In alpine, phpize does not exist, and instead phpizeXX exists.
 	#
 	if ! _phpize_cmd=$(command -v phpize); then
-		if ! _phpize_cmd=$(command -v phpize84); then
-			if ! _phpize_cmd=$(command -v phpize83); then
-				if ! _phpize_cmd=$(command -v phpize82); then
-					_phpize_cmd="phpize"
-				fi
-			fi
+		if ! _phpize_cmd=$(command -v "phpize$_package_phpver"); then
+			_phpize_cmd="phpize"
 		fi
 	fi
 
 	# [NOTE]
 	# If _configure_option is specified, it will be used.
 	# If not, the option for setting the php-config path will be checked
-	# and set here. Because, in alpine3.21/3.22, php-config does not exist,
-	# and instead php-config84.
+	# and set here. Because, in alpine, php-config does not exist, and
+	# instead php-configXX.
 	#
 	if [ -z "$_configure_option" ]; then
 		if ! _phpconfig_cmd=$(command -v php-config); then
-			if ! _phpconfig_cmd=$(command -v php-config84); then
-				if ! _phpconfig_cmd=$(command -v php-config83); then
-					if ! _phpconfig_cmd=$(command -v php-config82); then
-						_phpconfig_cmd=""
-					fi
-				fi
+			if ! _phpconfig_cmd=$(command -v "php-config$_package_phpver"); then
+				_phpconfig_cmd=""
 			fi
 		fi
 		if [ -n "$_phpconfig_cmd" ]; then

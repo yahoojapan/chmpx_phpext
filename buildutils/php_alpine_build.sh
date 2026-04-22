@@ -356,44 +356,21 @@ PRNINFO "Check package name and version"
 
 # [NOTE]
 # Some OS only have the phpizeXX command instead of phpize, so we'll check here.
-# ex) Alpine 3.22/3.21 only has php84/phpize84/php-config84.
 #
 if ! PHPBIN=$(command -v php); then
-	if ! PHPBIN=$(command -v php84); then
-		if ! PHPBIN=$(command -v php83); then
-			if ! PHPBIN=$(command -v php82); then
-				PRNERR "Not found \"php\" or \"phpXX\" command."
-				return 1
-			fi
-		fi
+	#
+	# Try to get phpXX name from installed package name
+	#
+	PHPPKG_PREFIX=$(apk list --installed 2>/dev/null | grep 'php[[:digit:]]*-[[:digit:]]' 2>/dev/null | sed -e 's#-.*$##g' | tr -d '\n')
+	if ! PHPBIN=$(command -v "${PHPPKG_PREFIX}"); then
+		PRNERR "Not found \"php\" or \"phpXX\" command."
+		return 1
 	fi
 fi
 
-if ! PHPIZECMD=$(command -v phpize); then
-	if ! PHPIZECMD=$(command -v phpize84); then
-		if ! PHPIZECMD=$(command -v phpize83); then
-			if ! PHPIZECMD=$(command -v phpize82); then
-				PRNERR "Not found \"phpize\" or \"phpizeXX\" command."
-				return 1
-			fi
-		fi
-	fi
-fi
-if ! PHPCONFIGCMD=$(command -v php-config); then
-	if ! PHPCONFIGCMD=$(command -v php-config84); then
-		if ! PHPCONFIGCMD=$(command -v php-config83); then
-			if ! PHPCONFIGCMD=$(command -v php-config82); then
-				PRNERR "Not found \"php-config\" or \"php-configXX\" command."
-				return 1
-			fi
-		fi
-	fi
-fi
-PHPCONFIG_CONFIGURE_OPT="--with-php-config=${PHPCONFIGCMD}"
-
-PACKAGE_NAME=$(head -n 1 "${SRCTOP}"/ChangeLog | awk '{print $1}' | tr -d '\n')
-PACKAGE_VERSION=$(head -n 1 "${SRCTOP}"/ChangeLog | sed -e 's/[(]//g' -e 's/[)]//g' | awk '{print $2}' | sed -e 's/-.*$//g' | tr -d '\n')
-
+#
+# Get PHP version
+#
 PACKAGE_PHPMAJORVERSION=$("${PHPBIN}" -r 'echo PHP_MAJOR_VERSION;')
 PACKAGE_PHPMINORVERSION=$("${PHPBIN}" -r 'echo PHP_MINOR_VERSION;')
 
@@ -408,6 +385,30 @@ else
 	#
 	PACKAGE_PHPVERSION="${PACKAGE_PHPMAJORVERSION}${PACKAGE_PHPMINORVERSION}"
 fi
+
+#
+# PHP commands
+#
+if ! PHPIZECMD=$(command -v phpize); then
+	if ! PHPIZECMD=$(command -v "phpize${PACKAGE_PHPVERSION}"); then
+		PRNERR "Not found \"phpize\" or \"phpizeXX\" command."
+		return 1
+	fi
+fi
+if ! PHPCONFIGCMD=$(command -v php-config); then
+	if ! PHPCONFIGCMD=$(command -v "php-config${PACKAGE_PHPVERSION}"); then
+		PRNERR "Not found \"php-config\" or \"php-configXX\" command."
+		return 1
+	fi
+fi
+PHPCONFIG_CONFIGURE_OPT="--with-php-config=${PHPCONFIGCMD}"
+
+#
+# Others
+#
+PACKAGE_NAME=$(head -n 1 "${SRCTOP}"/ChangeLog | awk '{print $1}' | tr -d '\n')
+PACKAGE_VERSION=$(head -n 1 "${SRCTOP}"/ChangeLog | sed -e 's/[(]//g' -e 's/[)]//g' | awk '{print $2}' | sed -e 's/-.*$//g' | tr -d '\n')
+
 PACKAGE_PHPVER_NAME=$(echo "${PACKAGE_NAME}" | sed -e "s/php/php${PACKAGE_PHPVERSION}/g")
 PACKAGE_DESC="k2hash extension for PHP${PACKAGE_PHPMAJORVERSION}.${PACKAGE_PHPMINORVERSION}"
 
