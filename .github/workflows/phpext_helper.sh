@@ -263,20 +263,13 @@ run_pre_configuration()
 
 	# [NOTE]
 	# Some OS only have the phpizeXX command instead of phpize, so we'll check here.
-	# ex) Alpine 3.22/3.21 only has phpize84.
 	#
 	PIPIZECMD="phpize"
 	if ! /bin/sh -c "${SWITCH_PHP_COMMAND} command -v ${PIPIZECMD} >/dev/null 2>&1"; then
-		PIPIZECMD="phpize84"
+		PIPIZECMD="phpize${PHPVER_NOPERIOD}"
 		if ! /bin/sh -c "${SWITCH_PHP_COMMAND} command -v ${PIPIZECMD} >/dev/null 2>&1"; then
-			PIPIZECMD="phpize83"
-			if ! /bin/sh -c "${SWITCH_PHP_COMMAND} command -v ${PIPIZECMD} >/dev/null 2>&1"; then
-				PIPIZECMD="phpize82"
-				if ! /bin/sh -c "${SWITCH_PHP_COMMAND} command -v ${PIPIZECMD} >/dev/null 2>&1"; then
-					PRNERR "Not found \"phpize\" or \"phpizeXX\" command."
-					return 1
-				fi
-			fi
+			PRNERR "Not found \"phpize\" or \"phpizeXX\" command."
+			return 1
 		fi
 	fi
 
@@ -294,25 +287,16 @@ run_configuration()
 {
 	# [NOTE]
 	# Some OS only have the phpizeXX command instead of phpize, so we'll check here.
-	# ex) Alpine 3.22/3.21 only has php-config84.
 	#
 	if PHPCONFIGCMD=$(/bin/sh -c "${SWITCH_PHP_COMMAND} command -v php-config"); then
 		# default
 		CONFIGURE_PHP_EXT_OPT=""
 	else
-		if PHPCONFIGCMD=$(/bin/sh -c "${SWITCH_PHP_COMMAND} command -v php-config84"); then
+		if PHPCONFIGCMD=$(/bin/sh -c "${SWITCH_PHP_COMMAND} command -v php-config${PHPVER_NOPERIOD}"); then
 			CONFIGURE_PHP_EXT_OPT="--with-php-config=${PHPCONFIGCMD}"
 		else
-			if PHPCONFIGCMD=$(/bin/sh -c "${SWITCH_PHP_COMMAND} command -v php-config83"); then
-				CONFIGURE_PHP_EXT_OPT="--with-php-config=${PHPCONFIGCMD}"
-			else
-				if PHPCONFIGCMD=$(/bin/sh -c "${SWITCH_PHP_COMMAND} command -v php-config82"); then
-					CONFIGURE_PHP_EXT_OPT="--with-php-config=${PHPCONFIGCMD}"
-				else
-					PRNWARN "Not found \"php-config\" or \"php-configXX\" command, so do not specify \"--with-php-config\" option."
-					CONFIGURE_PHP_EXT_OPT=""
-				fi
-			fi
+			PRNWARN "Not found \"php-config\" or \"php-configXX\" command, so do not specify \"--with-php-config\" option."
+			CONFIGURE_PHP_EXT_OPT=""
 		fi
 	fi
 
@@ -460,9 +444,9 @@ run_shellcheck()
 		SHELLCHECK_EXCEPT_PATHS_CMD="${SHELLCHECK_EXCEPT_PATHS_CMD} | grep -v '${_one_path}'"
 	done
 
-	SHELLCHECK_FILES_NO_SH="$(/bin/sh -c      "grep -ril '^\#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep -v '\.sh' ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
-	SHELLCHECK_FILES_SH="$(/bin/sh -c         "grep -ril '^\#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep '\.sh'    ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
-	SHELLCHECK_FILES_INCLUDE_SH="$(/bin/sh -c "grep -Lir '^\#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep '\.sh'    ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
+	SHELLCHECK_FILES_NO_SH="$(/bin/sh -c      "grep -ril '^#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep -v '\.sh' ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
+	SHELLCHECK_FILES_SH="$(/bin/sh -c         "grep -ril '^#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep '\.sh'    ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
+	SHELLCHECK_FILES_INCLUDE_SH="$(/bin/sh -c "grep -Lir '^#!/bin/sh' ${SHELLCHECK_TARGET_DIRS} | grep '\.sh'    ${SHELLCHECK_EXCEPT_PATHS_CMD} | tr '\n' ' '")"
 
 	#
 	# Check scripts
@@ -1234,6 +1218,20 @@ if ({ RUNCMD "${INSTALLER_BIN}" "${UPDATE_CMD}" "${UPDATE_CMD_ARG}" "${INSTALL_A
 	exit 1
 fi
 
+# [NOTE]
+# For Fedora:44, /etc/pki/tls/certs/ca-bundle.crt does not exist.
+# To create it, you need to run "update-ca-trust extract --rhbz2387674".
+#
+if [ "${IS_OS_FEDORA}" -eq 1 ]; then
+	if [ ! -f /etc/pki/tls/certs/ca-bundle.crt ]; then
+		PRNINFO "Create ca-bundle.crt file for fedora OS"
+		if ({ RUNCMD update-ca-trust extract --rhbz2387674 || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
+			PRNERR "Failed to create ca-bundle.crt"
+			exit 1
+		fi
+	fi
+fi
+
 #
 # Check and install curl
 #
@@ -1567,44 +1565,20 @@ if [ "${RUN_CPPCHECK}" -eq 1 ]; then
 		fi
 
 	elif [ "${IS_OS_ROCKY}" -eq 1 ]; then
-		if echo "${CI_OSTYPE}" | sed -e 's#:##g' | grep -q -i 'rockylinux8'; then
+		#
+		# Rocky (need epel repository)
+		#
+		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" epel-release || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
+			PRNERR "Failed to install epel repository"
+			exit 1
+		fi
+
+		if echo "${CI_OSTYPE}" | sed -e 's#:##g' | grep -q -i 'rockylinux[:]*8'; then
 			#
-			# Rocky 8
+			# Rocky 8 (need to powertools )
 			#
-			if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to install epel repository"
-				exit 1
-			fi
-			if ({ RUNCMD "${INSTALLER_BIN}" config-manager --enable epel || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to enable epel repository"
-				exit 1
-			fi
 			if ({ RUNCMD "${INSTALLER_BIN}" config-manager --set-enabled powertools || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
 				PRNERR "Failed to enable powertools"
-				exit 1
-			fi
-		elif echo "${CI_OSTYPE}" | sed -e 's#:##g' | grep -q -i 'rockylinux9'; then
-			#
-			# Rocky 9
-			#
-			if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to install epel repository"
-				exit 1
-			fi
-			if ({ RUNCMD "${INSTALLER_BIN}" config-manager --enable epel || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to enable epel repository"
-				exit 1
-			fi
-		else
-			#
-			# Rocky 10 or later
-			#
-			if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" https://dl.fedoraproject.org/pub/epel/epel-release-latest-10.noarch.rpm || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to install epel repository"
-				exit 1
-			fi
-			if ({ RUNCMD "${INSTALLER_BIN}" config-manager --enable epel || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-				PRNERR "Failed to enable epel repository"
 				exit 1
 			fi
 		fi
@@ -1652,34 +1626,29 @@ if [ "${RUN_SHELLCHECK}" -eq 1 ]; then
 		# Fedora
 		#
 		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" ShellCheck || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-			PRNERR "Failed to install cppcheck"
+			PRNERR "Failed to install shellcheck"
 			exit 1
 		fi
 
 	elif [ "${IS_OS_ROCKY}" -eq 1 ]; then
 		#
-		# Rocky
+		# Rocky (need epel repository)
 		#
-		if ! LATEST_SHELLCHECK_DOWNLOAD_URL=$("${CURLCMD}" -s -S https://api.github.com/repos/koalaman/shellcheck/releases/latest | tr '{' '\n' | tr '}' '\n' | tr '[' '\n' | tr ']' '\n' | tr ',' '\n' | grep '"browser_download_url"' | grep 'linux.x86_64' | sed -e 's|"||g' -e 's|^.*browser_download_url:[[:space:]]*||g' -e 's|^[[:space:]]*||g' -e 's|[[:space:]]*$||g' | tr -d '\n'); then
-			PRNERR "Failed to get shellcheck download url path"
+		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" epel-release || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
+			PRNERR "Failed to install epel repository"
 			exit 1
 		fi
-		if ({ RUNCMD "${CURLCMD}" -s -S -L -o /tmp/shellcheck.tar.xz "${LATEST_SHELLCHECK_DOWNLOAD_URL}" || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-			PRNERR "Failed to download latest shellcheck tar.xz"
+		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" ShellCheck || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
+			PRNERR "Failed to install ShellCheck"
 			exit 1
 		fi
-		if ({ RUNCMD tar -C /usr/bin/ -xf /tmp/shellcheck.tar.xz --no-anchored 'shellcheck' --strip=1 || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-			PRNERR "Failed to extract latest shellcheck binary"
-			exit 1
-		fi
-		rm -f /tmp/shellcheck.tar.xz
 
 	elif [ "${IS_OS_UBUNTU}" -eq 1 ] || [ "${IS_OS_DEBIAN}" -eq 1 ]; then
 		#
 		# Ubuntu or Debian
 		#
 		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" shellcheck || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-			PRNERR "Failed to install cppcheck"
+			PRNERR "Failed to install shellcheck"
 			exit 1
 		fi
 
@@ -1688,7 +1657,7 @@ if [ "${RUN_SHELLCHECK}" -eq 1 ]; then
 		# Alpine
 		#
 		if ({ RUNCMD "${INSTALLER_BIN}" "${INSTALL_CMD}" "${INSTALL_CMD_ARG}" "${INSTALL_AUTO_ARG}" shellcheck || echo > "${PIPEFAILURE_FILE}"; } | sed -e 's/^/    /g') && rm "${PIPEFAILURE_FILE}" >/dev/null 2>&1; then
-			PRNERR "Failed to install cppcheck"
+			PRNERR "Failed to install shellcheck"
 			exit 1
 		fi
 
@@ -1704,9 +1673,15 @@ PRNSUCCESS "Install shellcheck"
 # Processing
 #==============================================================
 #
-# Configuration
+# Change current directory
 #
-cd "${SRCTOP}" || exit 1
+PRNTITLE "Change current directory"
+
+if ! RUNCMD cd "${SRCTOP}"; then
+	PRNERR "Failed to chnage current directory to ${SRCTOP}"
+	exit 1
+fi
+PRNSUCCESS "Changed current directory"
 
 #
 # Before configuration
